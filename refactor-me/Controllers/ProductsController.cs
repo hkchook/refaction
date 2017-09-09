@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Web.Http;
 using refactor_me.Models;
@@ -10,106 +11,186 @@ namespace refactor_me.Controllers
     {
         [Route]
         [HttpGet]
-        public Products GetAll()
+        public IHttpActionResult GetAll()
         {
-            return new Products();
+            ProductsBLL pb = new ProductsBLL();
+            List<Product> pl = pb.GetAll();
+            if (pl == null || pl.Count <= 0)
+            {
+                return NotFound();
+            }
+
+            return Ok(pl);
         }
 
         [Route]
         [HttpGet]
-        public Products SearchByName(string name)
+        public IHttpActionResult SearchByName(string name)
         {
-            return new Products(name);
+            ProductsBLL pb = new ProductsBLL();
+            Product product = pb.GetProduct(name);
+            if (product == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(product);
         }
 
         [Route("{id}")]
         [HttpGet]
-        public Product GetProduct(Guid id)
+        public IHttpActionResult GetProduct(Guid id)
         {
-            var product = new Product(id);
-            if (product.IsNew)
-                throw new HttpResponseException(HttpStatusCode.NotFound);
+            ProductsBLL pb = new ProductsBLL();
+            Product product = pb.GetProduct(id);
+            if (product == null)
+            {
+                return NotFound();
+            }
 
-            return product;
+            return Ok(product);
         }
 
         [Route]
         [HttpPost]
         public void Create(Product product)
         {
-            product.Save();
+            ProductsBLL pb = new ProductsBLL();
+            if (!pb.CreateProduct(product))
+            {
+                StatusCode(HttpStatusCode.BadRequest);
+            }
+            else
+            {
+                StatusCode(HttpStatusCode.OK);
+            }
         }
 
         [Route("{id}")]
         [HttpPut]
         public void Update(Guid id, Product product)
         {
-            var orig = new Product(id)
+            ProductsBLL pb = new ProductsBLL();
+            if (!pb.UpdateProduct(id, product))
             {
-                Name = product.Name,
-                Description = product.Description,
-                Price = product.Price,
-                DeliveryPrice = product.DeliveryPrice
-            };
-
-            if (!orig.IsNew)
-                orig.Save();
+                StatusCode(HttpStatusCode.NotFound);
+            }
+            else
+            {
+                StatusCode(HttpStatusCode.OK);
+            }
         }
 
         [Route("{id}")]
         [HttpDelete]
         public void Delete(Guid id)
         {
-            var product = new Product(id);
-            product.Delete();
+            ProductsBLL pb = new ProductsBLL();
+            if (!pb.DeleteProduct(id))
+            {
+                StatusCode(HttpStatusCode.NotFound);
+            }
+            else
+            {
+                StatusCode(HttpStatusCode.OK);
+            }
         }
 
         [Route("{productId}/options")]
         [HttpGet]
-        public ProductOptions GetOptions(Guid productId)
+        public IHttpActionResult GetOptions(Guid productId)
         {
-            return new ProductOptions(productId);
+            ProductsBLL pb = new ProductsBLL();
+            List<ProductOption> pl = pb.GetProductOptions(productId);
+            if (pl == null || pl.Count <= 0)
+            {
+                return NotFound();
+            }
+
+            return Ok(pl);
         }
 
         [Route("{productId}/options/{id}")]
         [HttpGet]
-        public ProductOption GetOption(Guid productId, Guid id)
+        public IHttpActionResult GetOption(Guid productId, Guid id)
         {
-            var option = new ProductOption(id);
-            if (option.IsNew)
-                throw new HttpResponseException(HttpStatusCode.NotFound);
+            ProductsBLL pb = new ProductsBLL();
+            ProductOption productoption = pb.GetProductOption(productId, id);
+            if (productoption == null)
+            {
+                return NotFound();
+            }
 
-            return option;
+            return Ok(productoption);
         }
 
         [Route("{productId}/options")]
         [HttpPost]
         public void CreateOption(Guid productId, ProductOption option)
         {
-            option.ProductId = productId;
-            option.Save();
+            ProductsBLL pb = new ProductsBLL();
+            Product product = pb.GetProduct(productId);
+            if (product != null)
+            {
+                if (pb.CreateOption(productId, option))
+                {
+                    StatusCode(HttpStatusCode.OK);
+                }
+                else
+                {
+                    StatusCode(HttpStatusCode.BadRequest);
+                }
+            }
+            else
+            {
+                StatusCode(HttpStatusCode.NotFound);
+            }
         }
 
         [Route("{productId}/options/{id}")]
         [HttpPut]
-        public void UpdateOption(Guid id, ProductOption option)
+        public void UpdateOption(Guid productId, Guid id, ProductOption option)
         {
-            var orig = new ProductOption(id)
+            ProductsBLL pb = new ProductsBLL();
+            ProductOption productoption = pb.GetProductOption(productId, id);
+            if (productoption != null)
             {
-                Name = option.Name,
-                Description = option.Description
-            };
-
-            if (!orig.IsNew)
-                orig.Save();
+                if (pb.UpdateOption(productId, id, option))
+                {
+                    StatusCode(HttpStatusCode.OK);
+                }
+                else
+                {
+                    StatusCode(HttpStatusCode.BadRequest);
+                }
+            }
+            else
+            {
+                StatusCode(HttpStatusCode.NotFound);
+            }
         }
 
         [Route("{productId}/options/{id}")]
         [HttpDelete]
-        public void DeleteOption(Guid id)
+        public void DeleteOption(Guid productId, Guid id)
         {
-            var opt = new ProductOption(id);
-            opt.Delete();
+            ProductsBLL pb = new ProductsBLL();
+            ProductOption productoption = pb.GetProductOption(productId, id);
+            if (productoption != null)
+            {
+                if (pb.DeleteOption(id))
+                {
+                    StatusCode(HttpStatusCode.OK);
+                }
+                else
+                {
+                    StatusCode(HttpStatusCode.BadRequest);
+                }
+            }
+            else
+            {
+                StatusCode(HttpStatusCode.NotFound);
+            }
         }
     }
 }
